@@ -1,0 +1,177 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=3.0, user-scalable=no, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta content="" name="description" />
+<meta content="" name="keywords" />
+<title>拼拼乐</title>
+<link rel="prefetch" href="img/image0.jpg" />
+<link rel="stylesheet" href="css/main.css">
+
+</head>
+
+<body>
+	
+	<div class="home">
+		<div class="img"><img class="img-title" src="img/title.png" /></div>
+		<div class="btn btn-level btn-bg0" onclick="levelClicked(0)">初级(9块)</div>
+		<div class="btn btn-level btn-bg1" onclick="levelClicked(1)">中级(16块)</div>
+		<div class="btn btn-level btn-bg2" onclick="levelClicked(2)">高级(36块)</div>
+	</div>
+	<div class="game" style="display: none;">
+		<div class="box"></div>
+		<div class="btn btn-start btn-bg0">开始游戏</div>
+	</div>
+	<div class="result" style="display: none;">
+		<div style="margin:20%">
+			<div class="usedtime text text-size-2 text-color-red">用时：10s</div>
+			<div class="betterthan text text-size-2 text-color-red">战胜80%的人</div>
+		</div>
+		<!--<div>
+			<div class="btn" style="width: 37.5%; margin:0% 2.5% 0% 10%;" onclick="replay()">继续挑战</div>
+			<div class="btn" style="width: 37.5%; margin:0% 10% 0% 2.5%;"  onclick="pickFriends()">pk好友</div>
+		</div>-->
+		<div class="btn btn-replay btn-bg0"  onclick="replay()">继续挑战</div>
+		<div id="couponBtn" class="btn btn-ad btn-bg2"  onclick="ad()"></div>
+	</div>
+	<div class="ad" style="display: none;">
+		<div id="ruleText" class="text text-size-3 text-color-purple"></div>
+		<div id="qrcodeImg" class="img"><img id="code" class="img-qrcode" /></div>
+		<div id="remarkText" class="text text-size-1 text-color-blue"></div>
+	</div>
+	<img id="tempImg0" style="width:0px;height:1px; display: none;" />
+	<img id="tempImg1"  style="width:0px;height:1px;"/>
+	<img id="tempImg2"  style="width:0px;height:1px;"/>
+</body>
+<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+<script type="text/javascript" src="js/jquery.drag-drop.plugin.min.js"></script>
+<script type="text/javascript" src="js/puzzle.js"></script>
+
+<script type="text/javascript">
+
+var path = getQueryParam("show");
+if (path == null || path.length <= 0) {
+	path = "default";
+}
+
+initShowText("img/"+path+"/show.json");
+
+$("#code").attr("src", "img/"+path+"/qrcode.png");
+
+var imgs = ["img/"+path+"/image0.jpg", "img/"+path+"/image1.jpg", "img/"+path+"/image2.jpg"];
+
+var puzzle = new puzzle(imgs, $(".box"));
+var levels = [0, 1, 3];
+var levelIndex = 0;
+
+preloadImage();
+function preloadImage(path) {
+	setTimeout(function() {
+        $("#tempImg0").attr("src", imgs[0]);
+        $("#tempImg1").attr("src", imgs[1]);
+        $("#tempImg2").attr("src", imgs[2]);
+    }, 100);
+}
+
+function initShowText(path) {
+	$.getJSON(path, function(data){ 
+		 $("#couponBtn").html(data.coupon);
+		 var rule = data.rule.replace(new RegExp("\n","gm"), "<br>");
+		 $("#ruleText").html(rule);
+		 var remark = data.remark.replace(new RegExp("\n","gm"), "<br>");
+		 $("#remarkText").html(remark);
+	});
+}
+
+function getQueryParam(name) { 
+	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i"); 
+	var r = window.location.search.substr(1).match(reg); 
+	if (r != null)
+		return unescape(r[2]); 
+	return null;
+} 
+
+$(".game .btn").on("click",function(){
+	$(".game .btn").hide();
+	puzzle.startGame({"callback":function (obj) {
+		var imgIndex = obj.index;
+		var duration = obj.time;
+		var betterThan = obj.better;
+		if (imgIndex >= 0) {
+			showView(2);
+			$(".usedtime").html("用时："+parseDuration(duration));
+			$(".betterthan").html("战胜 "+betterThan.toFixed(1)+"% 的人");
+		}
+	}});
+});
+
+function levelClicked(index) {
+	showView(1);
+
+	var width = $(".box").width();
+	var height = width*922/618;
+	$(".box").css("height", height+"px");
+	
+	levelIndex = index;
+	var level = levels[levelIndex];
+	
+	puzzle.setRowAndLine(3+level, 3+level, levelIndex);
+	puzzle.setup();
+}
+
+function replay() {
+	var index = levelIndex + 1;
+	if (index>=imgs.length) {
+		levelIndex = 0;
+		showView(0);
+	} else {
+		levelClicked(index);
+	}
+}
+
+function pickFriends() {
+	replay();
+}
+
+function ad() {
+	showView(3);
+}
+
+function showView(index) {
+	$(".home").hide();
+	$(".game").hide();
+	$(".result").hide();
+	$(".ad").hide();
+	$(".game .btn").show();
+	if (index == 0) {
+		$(".home").show();
+	} else if (index == 1) {
+		$(".game").show();
+	} else if (index == 2) {
+		$(".result").show();
+	} else {
+		$(".ad").show();
+	}
+}
+
+function parseDuration (duration) {
+	var second =  Math.floor (duration % 60);
+	duration = Math.floor(duration/60);
+	var minute = Math.floor (duration % 60);
+	duration = Math.floor(duration/60);
+	var hour = Math.floor (duration % 60);
+	if (second<10) {
+		second = "0" + second;
+	}
+	if (minute<10) {
+		minute = "0" + minute;
+	}
+	if (hour<10) {
+		hour = "0" + hour;
+	}
+	return hour + "：" + minute + "：" + second;
+}
+
+</script>
+</html>
